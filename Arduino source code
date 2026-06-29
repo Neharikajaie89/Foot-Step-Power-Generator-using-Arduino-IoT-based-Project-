@@ -1,0 +1,109 @@
+/*
+  Footstep Power Generator using Arduino & ESP8266
+
+  Hardware:
+  - Arduino UNO
+  - Piezoelectric Sensor Array
+  - Bridge Rectifier
+  - Capacitor
+  - Voltage Divider
+  - ESP8266 WiFi Module
+
+  IoT Platform:
+  - ThingSpeak
+*/
+
+#include <SoftwareSerial.h>
+
+SoftwareSerial esp8266(2, 3);   // RX, TX
+
+const int sensorPin = A0;
+
+String apiKey = "YOUR_THINGSPEAK_API_KEY";
+String ssid = "YOUR_WIFI_NAME";
+String password = "YOUR_WIFI_PASSWORD";
+
+float voltage = 0;
+
+void setup()
+{
+  Serial.begin(9600);
+  esp8266.begin(115200);
+
+  delay(2000);
+
+  Serial.println("Footstep Power Generator");
+  connectWiFi();
+}
+
+void loop()
+{
+  int sensorValue = analogRead(sensorPin);
+
+  // Arduino ADC conversion
+  voltage = sensorValue * (5.0 / 1023.0);
+
+  // If using a 1:1 voltage divider
+  // Actual Voltage = voltage * 2
+  float actualVoltage = voltage * 2.0;
+
+  Serial.print("ADC: ");
+  Serial.print(sensorValue);
+
+  Serial.print("   Voltage: ");
+  Serial.print(actualVoltage);
+  Serial.println(" V");
+
+  sendThingSpeak(actualVoltage);
+
+  delay(15000);   // ThingSpeak minimum update interval
+}
+
+void connectWiFi()
+{
+  sendCommand("AT", 1000);
+
+  sendCommand("AT+CWMODE=1", 2000);
+
+  String cmd = "AT+CWJAP=\"" + ssid + "\",\"" + password + "\"";
+
+  sendCommand(cmd, 10000);
+
+  Serial.println("WiFi Connected");
+}
+
+void sendThingSpeak(float value)
+{
+  String data = "GET /update?api_key=" + apiKey +
+                "&field1=" + String(value);
+
+  sendCommand("AT+CIPMUX=0", 1000);
+
+  sendCommand("AT+CIPSTART=\"TCP\",\"api.thingspeak.com\",80", 4000);
+
+  String cmd = "AT+CIPSEND=" + String(data.length() + 2);
+
+  sendCommand(cmd, 2000);
+
+  esp8266.println(data);
+
+  delay(3000);
+
+  sendCommand("AT+CIPCLOSE", 1000);
+}
+
+void sendCommand(String command, int timeout)
+{
+  esp8266.println(command);
+
+  long int time = millis();
+
+  while ((time + timeout) > millis())
+  {
+    while (esp8266.available())
+    {
+      char c = esp8266.read();
+      Serial.write(c);
+    }
+  }
+}
