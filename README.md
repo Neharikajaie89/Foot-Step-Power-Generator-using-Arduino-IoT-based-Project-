@@ -181,9 +181,5 @@ This project is licensed under the **MIT License**. Feel free to use and modify 
 
 **Neharika jaie**
 
-* GitHub: [https://github.com/yourusername](https://github.com/yourusername)
-* LinkedIn: [https://linkedin.com/in/yourprofile](https://linkedin.com/in/yourprofile)
-
----
 
 ### ⭐ If you found this project helpful, don't forget to star the repository!
